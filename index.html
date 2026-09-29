@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown-Based Tech Blog</title>
+  <!-- Google Fonts for modern typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Highlight.js CSS for Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand">
+        <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <line x1="10" y1="9" x2="8" y2="9"></line>
+        </svg>
+        <h1>Markdown-Based Tech Blog</h1>
+      </div>
+      <div class="header-actions">
+        <div class="status-indicator" title="Application is running statically in pure frontend mode">
+          <span class="status-dot"></span>
+          <span class="status-text">Static Engine Ready</span>
+        </div>
+        <button id="copy-html-btn" class="btn btn-secondary">Copy HTML</button>
+        <button id="clear-btn" class="btn btn-danger">Clear</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <div class="pane editor-pane">
+      <div class="pane-header">
+        <span class="pane-title">Markdown Input</span>
+        <span class="word-count" id="word-count">0 words | 0 chars</span>
+      </div>
+      <textarea id="markdown-input" placeholder="Type or paste your Markdown here..." spellcheck="false"></textarea>
+    </div>
+
+    <div class="pane preview-pane">
+      <div class="pane-header">
+        <span class="pane-title">Live Preview</span>
+        <span class="preview-badge">Rendered Output</span>
+      </div>
+      <div id="preview-output" class="markdown-body"></div>
+    </div>
+  </main>
+
+  <!-- External JS Libraries (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
