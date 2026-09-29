@@ -16,7 +16,9 @@ A production-ready static web application that allows users to write and preview
 
 ```text
 markdown-tech-blog/
-├── .gitignore    # Excluded files for OS, IDEs, and secrets
+├── .dockerignore # Excluded files for Docker build context
+├── .gitignore    # Excluded files for Git version control
+├── Dockerfile    # Nginx Alpine container definition
 ├── index.html    # Main layout structure, UI components, and library CDN links
 ├── style.css     # Dark mode styling, layout grids, typography, and Markdown styles
 ├── script.js     # Markdown parsing logic, live event bindings, and utility functions
@@ -44,6 +46,42 @@ Then visit `http://localhost:8000` in your web browser.
 ### Option 3: Node.js `npx serve`
 ```bash
 npx serve .
+```
+
+## Docker Containerization
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+
+### Docker Image Build
+Build the lightweight Nginx container image:
+```bash
+docker build -t markdown-tech-blog:latest .
+```
+
+### List Docker Images
+Verify the built image:
+```bash
+docker images | grep markdown-tech-blog
+```
+
+### Run Docker Container
+Run the container mapping port `8080` on the host to port `80` in the container:
+```bash
+docker run -d --name markdown-blog-app -p 8080:80 markdown-tech-blog:latest
+```
+
+### Access Application in Browser
+Open your browser and navigate to:
+`http://localhost:8080`
+
+### Stop and Remove Container
+```bash
+# Stop the running container
+docker stop markdown-blog-app
+
+# Remove the container
+docker rm markdown-blog-app
 ```
 
 ## Git Branching Strategy
