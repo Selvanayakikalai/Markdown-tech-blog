@@ -87,12 +87,35 @@ docker rm markdown-blog-app
 
 ## Jenkins CI/CD Pipeline
 
-The project includes a declarative `Jenkinsfile` that automates build validation and Docker image creation.
+The project includes a declarative `Jenkinsfile` that automates build validation and Docker image creation across both Windows and Linux Jenkins agents.
 
-### Pipeline Stages
-1. **Checkout**: Pulls source code from GitHub SCM repository.
-2. **Validate**: Verifies that essential static files (`index.html`, `style.css`, `script.js`, `Dockerfile`) exist before proceeding.
-3. **Docker Build**: Builds the Docker container image tagged with build number and `latest` using environment variable `DOCKER_IMAGE = "selvanayaki06/markdown-tech-blog"`.
+### Required Jenkins Plugins
+- **Git Plugin** (`git`): For cloning the GitHub repository.
+- **Pipeline Plugin** (`workflow-aggregator`): For executing Declarative Pipelines.
+- **Credentials Binding Plugin** (`credentials-binding`): For secure credential injection.
+
+### Required Jenkins Credentials
+- **`github-credentials`** (Username with Password / GitHub Personal Access Token): Used for authenticating SCM access if the repository is private.
+- **`docker-hub-credentials`** (Username with Password / Docker Hub Token): Configured for upcoming registry push operations.
+
+### Step-by-Step Jenkins Setup Guide
+
+1. **Create Jenkins Pipeline Job**:
+   - Navigate to Jenkins Dashboard -> **New Item**.
+   - Enter `markdown-tech-blog-pipeline`, select **Pipeline**, and click **OK**.
+
+2. **Connect GitHub Repository**:
+   - Under **Pipeline** section, set **Definition** to `Pipeline script from SCM`.
+   - Set **SCM** to `Git`.
+   - Enter **Repository URL**: `https://github.com/Selvanayakikalai/Markdown-tech-blog.git`.
+   - Specify **Branches to build**: `*/main` or `*/develop`.
+   - Set **Script Path**: `Jenkinsfile`.
+
+3. **Configure Docker Access on Windows**:
+   - Ensure the user running the Jenkins service has permission to execute `docker` commands via Docker Desktop for Windows.
+
+4. **Run the Pipeline**:
+   - Click **Build Now** to trigger the initial pipeline run.
 
 ## Git Branching Strategy
 
