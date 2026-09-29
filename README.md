@@ -19,6 +19,7 @@ markdown-tech-blog/
 ├── .dockerignore # Excluded files for Docker build context
 ├── .gitignore    # Excluded files for Git version control
 ├── Dockerfile    # Nginx Alpine container definition
+├── Jenkinsfile   # Declarative Jenkins CI pipeline
 ├── index.html    # Main layout structure, UI components, and library CDN links
 ├── style.css     # Dark mode styling, layout grids, typography, and Markdown styles
 ├── script.js     # Markdown parsing logic, live event bindings, and utility functions
@@ -83,6 +84,15 @@ docker stop markdown-blog-app
 # Remove the container
 docker rm markdown-blog-app
 ```
+
+## Jenkins CI/CD Pipeline
+
+The project includes a declarative `Jenkinsfile` that automates build validation and Docker image creation.
+
+### Pipeline Stages
+1. **Checkout**: Pulls source code from GitHub SCM repository.
+2. **Validate**: Verifies that essential static files (`index.html`, `style.css`, `script.js`, `Dockerfile`) exist before proceeding.
+3. **Docker Build**: Builds the Docker container image tagged with build number and `latest` using environment variable `DOCKER_IMAGE = "selvanayaki06/markdown-tech-blog"`.
 
 ## Git Branching Strategy
 
