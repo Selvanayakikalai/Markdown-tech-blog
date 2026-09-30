@@ -16,14 +16,15 @@ A production-ready static web application that allows users to write and preview
 
 ```text
 markdown-tech-blog/
-├── .dockerignore # Excluded files for Docker build context
-├── .gitignore    # Excluded files for Git version control
-├── Dockerfile    # Nginx Alpine container definition
-├── Jenkinsfile   # Declarative Jenkins CI pipeline
-├── index.html    # Main layout structure, UI components, and library CDN links
-├── style.css     # Dark mode styling, layout grids, typography, and Markdown styles
-├── script.js     # Markdown parsing logic, live event bindings, and utility functions
-└── README.md     # Documentation and deployment instructions
+├── .dockerignore       # Excluded files for Docker build context
+├── .gitignore          # Excluded files for Git version control
+├── Dockerfile          # Nginx Alpine container definition
+├── docker-compose.yml  # Docker Compose config for Jenkins container
+├── Jenkinsfile         # Declarative Jenkins CI pipeline
+├── index.html          # Main layout structure, UI components, and library CDN links
+├── style.css           # Dark mode styling, layout grids, typography, and Markdown styles
+├── script.js           # Markdown parsing logic, live event bindings, and utility functions
+└── README.md           # Documentation and deployment instructions
 ```
 
 ## How to Run Locally
@@ -85,37 +86,52 @@ docker stop markdown-blog-app
 docker rm markdown-blog-app
 ```
 
-## Jenkins CI/CD Pipeline
+## Jenkins Docker Setup & CI/CD Integration
 
-The project includes a declarative `Jenkinsfile` that automates build validation and Docker image creation across both Windows and Linux Jenkins agents.
+Jenkins is deployed as a Docker container using the Docker-outside-of-Docker (DooD) pattern, allowing it to communicate directly with the host's Docker Desktop daemon via `/var/run/docker.sock`.
 
-### Required Jenkins Plugins
-- **Git Plugin** (`git`): For cloning the GitHub repository.
-- **Pipeline Plugin** (`workflow-aggregator`): For executing Declarative Pipelines.
-- **Credentials Binding Plugin** (`credentials-binding`): For secure credential injection.
+### Jenkins Container Setup (`docker-compose.yml`)
+To start or reproduce the Jenkins CI container:
+```bash
+docker compose up -d
+```
+- **Jenkins URL**: `http://localhost:8081`
+- **Volume Persistence**: `jenkins_home` (stores all pipeline jobs and plugins)
+- **Docker Socket Integration**: `/var/run/docker.sock:/var/run/docker.sock`
 
-### Required Jenkins Credentials
-- **`github-credentials`** (Username with Password / GitHub Personal Access Token): Used for authenticating SCM access if the repository is private.
-- **`docker-hub-credentials`** (Username with Password / Docker Hub Token): Configured for upcoming registry push operations.
+### Verification of Docker Access inside Jenkins
+To verify that the Jenkins container can build Docker images:
+```bash
+docker exec jenkins-ci docker --version
+docker exec jenkins-ci docker info
+```
 
-### Step-by-Step Jenkins Setup Guide
+### Troubleshooting: `docker: not found`
+If a pipeline build fails with `docker: not found`:
+1. Ensure the `docker.io` package is installed inside the Jenkins container:
+   ```bash
+   docker exec -u 0 jenkins-ci apt-get update && docker exec -u 0 jenkins-ci apt-get install -y docker.io
+   ```
+2. Grant read/write permissions on the Docker socket:
+   ```bash
+   docker exec -u 0 jenkins-ci chmod 666 /var/run/docker.sock
+   ```
+
+### Step-by-Step Pipeline Execution Guide
 
 1. **Create Jenkins Pipeline Job**:
-   - Navigate to Jenkins Dashboard -> **New Item**.
+   - Open `http://localhost:8081` -> Click **New Item**.
    - Enter `markdown-tech-blog-pipeline`, select **Pipeline**, and click **OK**.
 
 2. **Connect GitHub Repository**:
-   - Under **Pipeline** section, set **Definition** to `Pipeline script from SCM`.
+   - Under **Pipeline**, set **Definition** to `Pipeline script from SCM`.
    - Set **SCM** to `Git`.
-   - Enter **Repository URL**: `https://github.com/Selvanayakikalai/Markdown-tech-blog.git`.
-   - Specify **Branches to build**: `*/main` or `*/develop`.
-   - Set **Script Path**: `Jenkinsfile`.
+   - **Repository URL**: `https://github.com/Selvanayakikalai/Markdown-tech-blog.git`.
+   - **Branch**: `*/main`.
+   - **Script Path**: `Jenkinsfile`.
 
-3. **Configure Docker Access on Windows**:
-   - Ensure the user running the Jenkins service has permission to execute `docker` commands via Docker Desktop for Windows.
-
-4. **Run the Pipeline**:
-   - Click **Build Now** to trigger the initial pipeline run.
+3. **Run the Pipeline**:
+   - Click **Build Now** to execute the pipeline stages: `Checkout` ➔ `Validate` ➔ `Docker Build`.
 
 ## Git Branching Strategy
 
