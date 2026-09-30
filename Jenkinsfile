@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'selvanayaki06/markdown-tech-blog'
-        IMAGE_TAG    = "${BUILD_NUMBER}"
+        DOCKER_IMAGE   = 'selvanayaki06/markdown-tech-blog'
+        IMAGE_TAG      = "${BUILD_NUMBER}"
+        DOCKER_CRED_ID = 'docker-hub-credentials'
     }
 
     stages {
@@ -55,6 +56,33 @@ pipeline {
                             if %ERRORLEVEL% neq 0 (echo Error: Docker build failed & exit /b 1)
                             echo Docker image build successful.
                         '''
+                    }
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                echo "Logging into Docker Hub and pushing image ${DOCKER_IMAGE}..."
+                script {
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CRED_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        if (isUnix()) {
+                            sh '''
+                                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                                docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
+                                docker push ${DOCKER_IMAGE}:latest
+                                docker logout
+                                echo "Docker push to Docker Hub successful."
+                            '''
+                        } else {
+                            bat '''
+                                echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                                docker push %DOCKER_IMAGE%:%IMAGE_TAG%
+                                docker push %DOCKER_IMAGE%:latest
+                                docker logout
+                                echo Docker push to Docker Hub successful.
+                            '''
+                        }
                     }
                 }
             }

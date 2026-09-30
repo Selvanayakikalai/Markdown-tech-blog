@@ -106,16 +106,25 @@ docker exec jenkins-ci docker --version
 docker exec jenkins-ci docker info
 ```
 
-### Troubleshooting: `docker: not found`
-If a pipeline build fails with `docker: not found`:
-1. Ensure the `docker.io` package is installed inside the Jenkins container:
-   ```bash
-   docker exec -u 0 jenkins-ci apt-get update && docker exec -u 0 jenkins-ci apt-get install -y docker.io
-   ```
-2. Grant read/write permissions on the Docker socket:
-   ```bash
-   docker exec -u 0 jenkins-ci chmod 666 /var/run/docker.sock
-   ```
+### Docker Hub Credential Setup in Jenkins
+
+To enable automated pushing of built images to Docker Hub (`selvanayaki06/markdown-tech-blog`), configure credentials inside Jenkins:
+
+1. **Generate Docker Hub Access Token**:
+   - Log in to [Docker Hub](https://hub.docker.com/).
+   - Go to **Account Settings** ➔ **Personal Access Tokens** ➔ **Generate New Token**.
+   - Set description to `Jenkins-CI-Token` and copy the generated token.
+
+2. **Add Credential in Jenkins**:
+   - Navigate to **Jenkins Dashboard** ➔ **Manage Jenkins** ➔ **Credentials** ➔ **System** ➔ **Global credentials (unrestricted)**.
+   - Click **+ Add Credentials**.
+   - **Kind**: `Username with password`.
+   - **Scope**: `Global`.
+   - **Username**: `selvanayaki06`.
+   - **Password**: Paste your generated Docker Hub Access Token.
+   - **ID**: `docker-hub-credentials`.
+   - **Description**: `Docker Hub Access Credentials`.
+   - Click **Create**.
 
 ### Step-by-Step Pipeline Execution Guide
 
@@ -131,7 +140,10 @@ If a pipeline build fails with `docker: not found`:
    - **Script Path**: `Jenkinsfile`.
 
 3. **Run the Pipeline**:
-   - Click **Build Now** to execute the pipeline stages: `Checkout` ➔ `Validate` ➔ `Docker Build`.
+   - Click **Build Now** to execute the pipeline stages: `Checkout` ➔ `Validate` ➔ `Docker Build` ➔ `Docker Push`.
+
+4. **Verify Image on Docker Hub**:
+   - Visit `https://hub.docker.com/r/selvanayaki06/markdown-tech-blog/tags` to view the newly pushed images (`:${BUILD_NUMBER}` and `:latest`).
 
 ## Git Branching Strategy
 
