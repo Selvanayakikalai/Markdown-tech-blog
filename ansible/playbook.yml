@@ -1,0 +1,162 @@
+---
+# ==============================================================================
+# Ansible Playbook — Markdown Tech Blog Deployment
+# ==============================================================================
+# This playbook automates the full deployment of the Markdown Tech Blog
+# Docker container onto any target host defined in inventory.ini.
+#
+# Usage:
+#   ansible-playbook -i inventory.ini playbook.yml
+#
+# Dry-run (check mode, no changes made):
+#   ansible-playbook -i inventory.ini playbook.yml --check
+#
+# Verbose output:
+#   ansible-playbook -i inventory.ini playbook.yml -v
+# ==============================================================================
+
+- name: "Deploy Markdown Tech Blog"
+  hosts: blog_servers
+  become: false    # Set to true if sudo is required on remote hosts
+
+  vars:
+    # These can be overridden at runtime:
+    #   ansible-playbook -i inventory.ini playbook.yml -e "docker_image_tag=11"
+    docker_image_tag: "{{ docker_image_tag | default('latest') }}"
+
+  tasks:
+
+    # --------------------------------------------------------------------------
+    # PHASE 1: Pre-flight — System Checks
+    # --------------------------------------------------------------------------
+
+    - name: "Phase 1 | Check target system info"
+      ansible.builtin.debug:
+        msg:
+          - "Hostname   : {{ ansible_hostname }}"
+          - "OS         : {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Kernel     : {{ ansible_kernel }}"
+          - "IP Address : {{ ansible_default_ipv4.address | default('N/A') }}"
+
+    - name: "Phase 1 | Verify Docker is installed"
+      ansible.builtin.command: docker --version
+      register: docker_version_output
+      changed_when: false
+      failed_when: docker_version_output.rc != 0
+
+    - name: "Phase 1 | Display Docker version"
+      ansible.builtin.debug:
+        msg: "Docker version: {{ docker_version_output.stdout }}"
+
+    - name: "Phase 1 | Verify Docker daemon is running"
+      ansible.builtin.command: docker info
+      register: docker_info_output
+      changed_when: false
+      failed_when: docker_info_output.rc != 0
+
+    - name: "Phase 1 | Confirm Docker daemon is accessible"
+      ansible.builtin.debug:
+        msg: "Docker daemon is running and accessible."
+
+    # --------------------------------------------------------------------------
+    # PHASE 2: Pull Docker Image from Docker Hub
+    # --------------------------------------------------------------------------
+
+    - name: "Phase 2 | Pull latest image from Docker Hub"
+      ansible.builtin.command: >
+        docker pull {{ docker_image_name }}:{{ docker_image_tag }}
+      register: docker_pull_output
+      changed_when: "'Pull complete' in docker_pull_output.stdout or 'Downloaded newer image' in docker_pull_output.stdout"
+
+    - name: "Phase 2 | Show pull output"
+      ansible.builtin.debug:
+        msg: "{{ docker_pull_output.stdout_lines }}"
+
+    # --------------------------------------------------------------------------
+    # PHASE 3: Stop and Remove Existing Container (if running)
+    # --------------------------------------------------------------------------
+
+    - name: "Phase 3 | Check if container '{{ container_name }}' exists"
+      ansible.builtin.command: docker ps -a --filter "name={{ container_name }}" --format "{{ '{{' }}.Names{{ '}}' }}"
+      register: existing_container
+      changed_when: false
+
+    - name: "Phase 3 | Stop existing container '{{ container_name }}' (if running)"
+      ansible.builtin.command: docker stop {{ container_name }}
+      when: container_name in existing_container.stdout
+      register: stop_result
+      failed_when: stop_result.rc != 0 and 'No such container' not in stop_result.stderr
+      changed_when: stop_result.rc == 0
+
+    - name: "Phase 3 | Remove existing container '{{ container_name }}'"
+      ansible.builtin.command: docker rm {{ container_name }}
+      when: container_name in existing_container.stdout
+      register: rm_result
+      failed_when: rm_result.rc != 0 and 'No such container' not in rm_result.stderr
+      changed_when: rm_result.rc == 0
+
+    # --------------------------------------------------------------------------
+    # PHASE 4: Deploy New Container
+    # --------------------------------------------------------------------------
+
+    - name: "Phase 4 | Start new application container"
+      ansible.builtin.command: >
+        docker run -d
+        --name {{ container_name }}
+        --restart unless-stopped
+        -p {{ container_external_port }}:{{ container_internal_port }}
+        -e APP_ENV={{ app_environment }}
+        -e APP_NAME="{{ app_name }}"
+        {{ docker_image_name }}:{{ docker_image_tag }}
+      register: run_output
+      changed_when: run_output.rc == 0
+
+    - name: "Phase 4 | Show new container ID"
+      ansible.builtin.debug:
+        msg: "Container started with ID: {{ run_output.stdout[:12] }}"
+
+    # --------------------------------------------------------------------------
+    # PHASE 5: Verify Deployment
+    # --------------------------------------------------------------------------
+
+    - name: "Phase 5 | Wait for container to become ready"
+      ansible.builtin.pause:
+        seconds: 3
+
+    - name: "Phase 5 | Verify container is running"
+      ansible.builtin.command: docker ps --filter "name={{ container_name }}" --filter "status=running" --format "{{ '{{' }}.Names{{ '}}' }}"
+      register: running_check
+      changed_when: false
+      failed_when: container_name not in running_check.stdout
+
+    - name: "Phase 5 | Confirm container is running"
+      ansible.builtin.debug:
+        msg: "Container '{{ container_name }}' is running successfully."
+
+    - name: "Phase 5 | Verify website responds on port {{ container_external_port }}"
+      ansible.builtin.uri:
+        url: "{{ app_health_url }}"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: health_check
+      retries: "{{ health_check_retries }}"
+      delay: "{{ health_check_delay }}"
+      until: health_check.status == 200
+
+    # --------------------------------------------------------------------------
+    # PHASE 6: Deployment Summary
+    # --------------------------------------------------------------------------
+
+    - name: "Phase 6 | Deployment Summary"
+      ansible.builtin.debug:
+        msg:
+          - "============================================================"
+          - " Deployment Successful!"
+          - "============================================================"
+          - " App Name   : {{ app_name }}"
+          - " Image      : {{ docker_image_name }}:{{ docker_image_tag }}"
+          - " Container  : {{ container_name }}"
+          - " Access URL : {{ app_health_url }}"
+          - " HTTP Status: {{ health_check.status }}"
+          - "============================================================"

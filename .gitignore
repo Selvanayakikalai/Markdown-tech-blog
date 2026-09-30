@@ -56,3 +56,11 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Ansible
+*.retry
+ansible/group_vars/vault.yml
+ansible/host_vars/*/vault.yml
+.vault_pass
+.vault_password
+ansible/.vault_pass

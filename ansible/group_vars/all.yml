@@ -1,0 +1,44 @@
+# ==============================================================================
+# group_vars/all.yml — Shared Variables for All Hosts
+# Markdown Tech Blog — Ansible Automation
+# ==============================================================================
+# These variables apply to every host in the inventory.
+# Override per-host values directly in inventory.ini if needed.
+# IMPORTANT: Do NOT put secrets, passwords, or tokens here.
+#            Use Ansible Vault or environment variables for sensitive values.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Docker Image Configuration
+# ------------------------------------------------------------------------------
+docker_image_name: "selvanayaki06/markdown-tech-blog"
+docker_image_tag: "latest"
+docker_full_image: "{{ docker_image_name }}:{{ docker_image_tag }}"
+
+# ------------------------------------------------------------------------------
+# Container Configuration
+# ------------------------------------------------------------------------------
+container_name: "markdown-blog-app"
+container_internal_port: 80        # Port INSIDE the container (Nginx listens on 80)
+container_external_port: 8080      # Port EXPOSED on the host machine
+
+# ------------------------------------------------------------------------------
+# Health Check Configuration
+# ------------------------------------------------------------------------------
+app_health_url: "http://localhost:{{ container_external_port }}"
+health_check_retries: 5
+health_check_delay: 3              # Seconds to wait between retries
+
+# ------------------------------------------------------------------------------
+# Docker Configuration
+# ------------------------------------------------------------------------------
+# Docker registry — leave empty for Docker Hub (default)
+docker_registry: ""
+# Set to true if the image is hosted in a private registry that requires login
+docker_login_required: false
+
+# ------------------------------------------------------------------------------
+# Deployment Metadata
+# ------------------------------------------------------------------------------
+app_name: "Markdown Tech Blog"
+app_environment: "production"

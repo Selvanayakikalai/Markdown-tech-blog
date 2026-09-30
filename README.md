@@ -16,15 +16,27 @@ A production-ready static web application that allows users to write and preview
 
 ```text
 markdown-tech-blog/
-├── .dockerignore       # Excluded files for Docker build context
-├── .gitignore          # Excluded files for Git version control
-├── Dockerfile          # Nginx Alpine container definition
-├── docker-compose.yml  # Docker Compose config for Jenkins container
-├── Jenkinsfile         # Declarative Jenkins CI pipeline
-├── index.html          # Main layout structure, UI components, and library CDN links
-├── style.css           # Dark mode styling, layout grids, typography, and Markdown styles
-├── script.js           # Markdown parsing logic, live event bindings, and utility functions
-└── README.md           # Documentation and deployment instructions
+├── .dockerignore           # Excluded files for Docker build context
+├── .gitignore              # Excluded files for Git version control
+├── Dockerfile              # Nginx Alpine container definition
+├── docker-compose.yml      # Docker Compose config for Jenkins container
+├── Jenkinsfile             # Declarative Jenkins CI pipeline
+├── index.html              # Main layout structure, UI components, and library CDN links
+├── style.css               # Dark mode styling, layout grids, typography, and Markdown styles
+├── script.js               # Markdown parsing logic, live event bindings, and utility functions
+├── README.md               # Documentation and deployment instructions
+├── terraform/              # Phase 4 — Terraform infrastructure automation
+│   ├── main.tf             # Docker provider + image + container resources
+│   ├── variables.tf        # Input variables with defaults
+│   ├── outputs.tf          # Output values (container ID, URL, etc.)
+│   ├── terraform.tfvars.example  # Safe example values (commit-safe)
+│   └── README.md           # Terraform-specific documentation
+└── ansible/                # Phase 5 — Ansible deployment automation
+    ├── inventory.ini       # Target host definitions (localhost for local testing)
+    ├── playbook.yml        # 6-phase deployment playbook
+    ├── group_vars/
+    │   └── all.yml         # Shared variables (no secrets)
+    └── README.md           # Ansible-specific documentation
 ```
 
 ## How to Run Locally
@@ -178,3 +190,94 @@ To host this static site using Nginx:
    ```bash
    sudo systemctl reload nginx
    ```
+
+---
+
+## Terraform Infrastructure Automation
+
+Terraform (Phase 4) provides infrastructure-as-code for Docker-based deployments. It uses the `kreuzwerker/docker` provider to define and manage the Docker container as infrastructure.
+
+### Terraform Commands (run from project root)
+
+```bash
+# Initialize Terraform (downloads Docker provider)
+terraform -chdir=terraform init
+
+# Validate configuration
+terraform -chdir=terraform validate
+
+# Preview what Terraform would create/change
+terraform -chdir=terraform plan
+
+# Apply (create container) — only run locally, not in CI
+terraform -chdir=terraform apply
+```
+
+> **Note:** Terraform runs `init` and `validate` automatically in the Jenkins CI pipeline. `apply` is intentionally excluded from the pipeline to prevent uncontrolled deployments.
+
+See [`terraform/README.md`](terraform/README.md) for full documentation.
+
+---
+
+## Ansible Deployment Automation
+
+Ansible (Phase 5) automates the full deployment lifecycle of the Docker container onto any target host.
+
+### Quick Start
+
+```bash
+# Run full deployment (from project root)
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+
+# Dry run (no changes applied)
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --check
+
+# Deploy specific build tag
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml -e "docker_image_tag=11"
+
+# Validate playbook syntax
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yml --syntax-check
+```
+
+### Deployment Phases
+
+| Phase | Description |
+|-------|-------------|
+| Phase 1 | System info, Docker install check, Docker daemon check |
+| Phase 2 | Pull `selvanayaki06/markdown-tech-blog:latest` from Docker Hub |
+| Phase 3 | Stop and remove existing container (if running) |
+| Phase 4 | Start new container on port 8080 |
+| Phase 5 | Health check — verify container running + HTTP 200 |
+| Phase 6 | Deployment summary |
+
+See [`ansible/README.md`](ansible/README.md) for full documentation.
+
+---
+
+## Full DevOps Pipeline Architecture
+
+```text
+GitHub (code push to main)
+        │
+        ▼
+Jenkins CI Pipeline (http://localhost:8081)
+        ├── Stage: Checkout         → pulls source from GitHub
+        ├── Stage: Terraform Init   → downloads Docker provider
+        ├── Stage: Terraform Validate → validates IaC config
+        ├── Stage: Validate         → checks required files exist
+        ├── Stage: Docker Build     → builds selvanayaki06/markdown-tech-blog:<BUILD_NUMBER>
+        └── Stage: Docker Push      → pushes :BUILD_NUMBER + :latest to Docker Hub
+        │
+        ▼
+Docker Hub (selvanayaki06/markdown-tech-blog)
+        │
+        ▼
+Ansible Playbook (ansible/playbook.yml) — run manually
+        ├── Pull :latest from Docker Hub
+        ├── Stop/remove old container
+        ├── Start new container (-p 8080:80)
+        └── Health check → http://localhost:8080
+        │
+        ▼
+Application running at http://localhost:8080
+```
