@@ -15,6 +15,20 @@ pipeline {
             }
         }
 
+        stage('Terraform Init') {
+            steps {
+                echo 'Initializing Terraform (downloading Docker provider)...'
+                sh 'terraform -chdir=terraform init -backend=false'
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                echo 'Validating Terraform configuration...'
+                sh 'terraform -chdir=terraform validate'
+            }
+        }
+
         stage('Validate') {
             steps {
                 echo 'Validating static application assets...'

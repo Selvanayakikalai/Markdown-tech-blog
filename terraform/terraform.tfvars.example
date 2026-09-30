@@ -1,0 +1,12 @@
+# ==============================================================================
+# Sample Variable Definitions for Terraform
+# Rename or copy to terraform.tfvars to customize values.
+# ==============================================================================
+
+docker_host       = "unix:///var/run/docker.sock"
+docker_image_name = "selvanayaki06/markdown-tech-blog"
+docker_image_tag  = "latest"
+container_name    = "markdown-blog-app-infra"
+internal_port     = 80
+external_port     = 8085
+environment       = "production"
